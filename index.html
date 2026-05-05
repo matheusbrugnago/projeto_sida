@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIDA with Jitsu</title>
+    
+    <script src='https://meet.jit.si/external_api.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+    <style>
+        body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+
+        /* --- TELA DE LOGIN --- */
+        #login-screen {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        /* Alterado para o azul claro da imagem */
+            background-color: #d1e9ff; 
+        }
+
+        .login-left {
+            flex: 1;
+            background: url("./Imagens/SIDA.png"); /* Imagem ilustrativa de acessibilidade/tecnologia */
+            background-size: cover;
+            background-position: center;
+        }
+
+        .login-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            /* Garante que o lado direito também acompanhe a cor */
+            background-color: #d1e9ff; 
+        }
+
+        .login-box { 
+            width: 100%; 
+            max-width: 350px; 
+            /* Adicionei um fundo branco leve no card para dar destaque aos campos */
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .login-box h2 { color: #2c3e50; margin-bottom: 20px; }
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .login-footer { margin-top: 20px; font-size: 0.85em; color: #7f8c8d; }
+        .login-footer a { color: #3498db; text-decoration: none; }
+
+        /* --- TELA DO SISTEMA (ESCONDIDA POR PADRÃO) --- */
+        #app-screen { display: none; height: 100vh; flex-direction: column; }
+        
+        .header { height: 70px; background: #2c3e50; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; color: white; }
+        .main-content { display: grid; grid-template-columns: 1fr 300px; height: calc(100vh - 70px); background: #000; }
+        #meet-container { width: 100%; height: 100%; }
+        .sidebar { background: #ecf0f1; display: flex; flex-direction: column; padding: 15px; height: 100%; box-sizing: border-box; }
+        
+        #chat-ia { 
+            flex: 1; background: white; border-radius: 5px; padding: 10px; 
+            overflow-y: auto; border: 1px solid #ddd; margin-bottom: 10px;
+            max-height: calc(100vh - 200px);
+        }
+
+        #btn-tradutor { background: #e74c3c; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-left"></div>
+        <div class="login-right">
+            <div class="login-box">
+                <h2>SIDA, Acesso à Chamada Integrada</h2>
+                <p>Entre com suas credenciais para acessar a sala.</p>
+                <input type="text" id="user" placeholder="Usuário">
+                <input type="password" id="pass" placeholder="Senha">
+                <button class="btn-login" onclick="validarLogin()">ENTRAR</button>
+                
+                <div class="login-footer">
+                    <a href="#">Esqueceu a senha?</a> | <a href="#">Cadastrar novo usuário</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-screen">
+        <header class="header">
+            <span>SIDA V.1.0.1</span>
+            <button id="btn-tradutor" onclick="initIA()">Ativar Tradução</button>
+        </header>
+        <main class="main-content">
+            <div id="meet-container"></div>
+            <aside class="sidebar">
+                <h3>Tradução Simultânea</h3>
+                <div id="chat-ia"></div>
+            </aside>
+        </main>
+    </div>
+
+    <div id="webcam-container" style="display:none;"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
