@@ -109,7 +109,7 @@
 
     <div id="app-screen">
         <header class="header">
-            <span>SIDA V.1.0.1</span>
+            <span>SIDA V.1.0.3</span>
             <button id="btn-tradutor" onclick="initIA()">Ativar Tradução</button>
         </header>
         <main class="main-content">
@@ -117,6 +117,9 @@
             <aside class="sidebar">
                 <h3>Tradução Simultânea</h3>
                 <div id="chat-ia"></div>
+                <button id="btn-voz" onclick="iniciarReconhecimentoVoz()" style="display:none; background: #3498db; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                🎙️ Falar com o Surdo
+                </button>
             </aside>
         </main>
     </div>
