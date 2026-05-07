@@ -32,11 +32,16 @@ function entrarNoSistema() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'flex';
     iniciarJitsi();
+    
+    // Adicione esta linha logo após iniciarJitsi:
+    // Ela garante que o Jitsi saiba quem você é para avisar aos outros
+    api.executeCommand('displayName', nomeUsuarioLogado);
+    gerarLinkCompartilhamento(); // <--- Adicione esta linha aqui
 }
 // --- LÓGICA DE RECONHECIMENTO DE VOZ (PONTO B para PONTO A) ---
 // --- LÓGICA DE RECONHECIMENTO DE VOZ ATUALIZADA ---
 function iniciarReconhecimentoVoz() {
-    console.log("Botão clicado! Tentando iniciar reconhecimento...");
+    console.log("Iniciando reconhecimento de voz...");
     
     const btnVoz = document.getElementById("btn-voz");
     const chatIA = document.getElementById("chat-ia");
@@ -44,7 +49,7 @@ function iniciarReconhecimentoVoz() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-        alert("API de voz não encontrada.");
+        alert("Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.");
         return;
     }
 
@@ -53,53 +58,45 @@ function iniciarReconhecimentoVoz() {
     recognition.continuous = false; 
     recognition.interimResults = false;
 
-    // EVENTO DE ERRO - MUITO IMPORTANTE AGORA
-    recognition.onerror = (event) => {
-        console.error("ERRO REAL DETECTADO:", event.error);
-        if (event.error === 'not-allowed') {
-            alert("ERRO: Acesso ao microfone negado! Clique no cadeado lá em cima na barra de endereços e permita o microfone.");
-        }
-    };
-
     recognition.onstart = () => {
-        console.log("AGORA SIM: Microfone ativo no navegador.");
         btnVoz.innerText = "🎙️ Ouvindo... fale agora";
         btnVoz.style.backgroundColor = "#e67e22";
     };
 
     recognition.onresult = (event) => {
-        const textoFalado = event.results[0][0].transcript;
+        // MUDANÇA AQUI: Usamos 'let' para permitir a alteração do texto
+        let textoFalado = event.results[0][0].transcript;
+        
+        // Formata a primeira letra para maiúscula
+        textoFalado = textoFalado.charAt(0).toUpperCase() + textoFalado.slice(1);
+        
         const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+        // Envia para o Jitsi para o outro usuário receber
         if (api) {
             api.executeCommand('sendChatMessage', `[VOZ]: ${textoFalado}`, '', true);
         }
 
+        // Exibe no chat local
         chatIA.innerHTML += `
-            <div style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                <span style="font-size: 0.85em; color: #3498db; display: block;">${nomeUsuarioLogado} às ${hora}:</span>
+            <div style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 5px; background-color: #f9f9f9; padding: 8px; border-radius: 5px;">
+                <span style="font-size: 0.85em; color: #3498db; display: block; font-weight: bold;">${nomeUsuarioLogado} às ${hora}:</span>
                 <span style="font-size: 1em; color: #2c3e50;">"${textoFalado}"</span>
             </div>`;
         chatIA.scrollTop = chatIA.scrollHeight;
     };
 
+    recognition.onerror = (event) => {
+        console.error("Erro no reconhecimento:", event.error);
+        btnVoz.innerText = "🎙️ Erro! Tente de novo";
+    };
+
     recognition.onend = () => {
-        console.log("Reconhecimento finalizado.");
         btnVoz.innerText = "🎙️ Falar com o Surdo";
         btnVoz.style.backgroundColor = "#3498db";
     };
 
-    // O PULO DO GATO:
-    // Às vezes o navegador precisa de um "empurrão". 
-    // Vamos tentar dar um stop antes do start para limpar qualquer tentativa anterior travada.
-    try {
-        recognition.stop(); 
-        setTimeout(() => {
-            recognition.start();
-        }, 100); 
-    } catch (e) {
-        recognition.start();
-    }
+    recognition.start();
 }
 
 // --- LÓGICA DO JITSI ---
@@ -110,9 +107,57 @@ function iniciarJitsi() {
         width: '100%',
         height: '100%',
         parentNode: document.querySelector('#meet-container'),
-        interfaceConfigOverwrite: { TOOLBAR_BUTTONS: ['microphone', 'camera', 'chat', 'hangup'] }
+        interfaceConfigOverwrite: { 
+            TOOLBAR_BUTTONS: ['microphone', 'camera', 'chat', 'hangup'] 
+        }
     };
+    
     api = new JitsiMeetExternalAPI(domain, options);
+
+    // --- NOVO: SINCRONIZAÇÃO DO CHAT ---
+    // Substitua o bloco api.addEventListeners pelo código abaixo:
+    api.addEventListeners({
+    incomingMessage: function (event) {
+        // 1. Extração de dados básicos
+        const msg = event.message;
+        const usuarioRemoto = event.nick || "Outro Usuário"; 
+        const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // 2. Filtro: Só processa mensagens com nossas etiquetas
+        if (msg.includes("[LIBRAS") || msg.includes("[VOZ]")) {
+            const chatIA = document.getElementById("chat-ia");
+            
+            // 3. Limpeza do texto para exibição e tradução
+            let textoLimpo = msg.replace(/\[LIBRAS - .*\]: /, "").replace("[VOZ]: ", "");
+
+            // 4. Acionamento do VLibras
+            // Verifica se o plugin está carregado e pronto
+            try {
+                if (window.plugin && window.plugin.player && window.plugin.player.loaded) {
+                    window.plugin.player.translate(textoLimpo);
+                }
+            } catch (e) {
+                console.log("Aguardando ativação do VLibras pelo usuário.");
+            }
+
+            // 5. Criação do elemento visual no chat lateral
+            const mensagemRecebida = `
+                <div style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 5px; background-color: #f0f7ff; border-radius: 5px; padding: 8px; border-left: 4px solid #3498db;">
+                    <span style="font-size: 0.75em; color: #2980b9; display: block; margin-bottom: 2px; font-weight: bold;">
+                        ${usuarioRemoto} às ${hora}:
+                    </span>
+                    <span style="font-size: 1em; color: #2c3e50;">
+                        "${textoLimpo}"
+                    </span>
+                </div>
+            `;
+
+            // 6. Inserção e Rolagem
+            chatIA.innerHTML += mensagemRecebida;
+            chatIA.scrollTop = chatIA.scrollHeight;
+        }
+    }
+});
 }
 
 // --- LÓGICA DA IA ---
@@ -219,4 +264,25 @@ function falar(texto) {
         
         window.speechSynthesis.speak(mensagem);
     }
+}
+// 1. Função para atualizar o link na tela (chame isso dentro de entrarNoSistema)
+function gerarLinkCompartilhamento() {
+    // O link para abrir direto no SIDA seria o link da sua página hospedada + o nome da sala
+    // Por enquanto, vamos usar o link direto do Jitsi para facilitar o acesso externo
+    const nomeDaSala = 'SIDA_Meeting_2026';
+    const urlCompleta = `https://meet.jit.si/${nomeDaSala}`;
+    
+    document.getElementById('link-reuniao').innerText = urlCompleta;
+}
+
+// 2. Função de Copiar e Colar
+function copiarLink() {
+    const linkTexto = document.getElementById('link-reuniao').innerText;
+    
+    // API de área de transferência moderna
+    navigator.clipboard.writeText(linkTexto).then(() => {
+        alert("Link da reunião copiado! Agora você pode enviar para os seus Colegas");
+    }).catch(err => {
+        console.error('Erro ao copiar: ', err);
+    });
 }
