@@ -81,7 +81,6 @@
             color: white; 
         }
 
-        /* Estilo para a área do link de compartilhamento */
         .share-area {
             display: flex;
             align-items: center;
@@ -92,33 +91,58 @@
             border: 1px solid #34495e;
         }
 
+        /* --- BOTÃO ATIVAR TRADUÇÃO (RECUPERADO) --- */
+        #btn-tradutor { 
+            background: #e74c3c; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        #btn-tradutor:hover { background: #c0392b; }
+
         .main-content { display: grid; grid-template-columns: 1fr 300px; height: calc(100vh - 70px); background: #000; }
         #meet-container { width: 100%; height: 100%; }
-        .sidebar { background: #ecf0f1; display: flex; flex-direction: column; padding: 15px; height: 100%; box-sizing: border-box; }
         
-        #chat-ia { 
-            flex: 1; background: white; border-radius: 5px; padding: 10px; 
-            overflow-y: auto; border: 1px solid #ddd; margin-bottom: 10px;
-            max-height: calc(100vh - 200px);
+        .sidebar { 
+            background: #ecf0f1; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 15px; 
+            height: 100%; 
+            box-sizing: border-box; 
+            overflow: hidden; 
         }
 
-        #btn-tradutor { background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #chat-ia { 
+            flex: 1; 
+            background: white; 
+            border-radius: 5px; 
+            padding: 10px; 
+            overflow-y: auto; 
+            border: 1px solid #ddd; 
+            margin-bottom: 15px; 
+        }
+
+        #btn-voz { 
+            width: 100%;
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold;
+            flex-shrink: 0; 
+        }
         
         /* Posicionamento VLibras na Esquerda */
-        div[vw].enabled {
-            left: 20px !important;
-            right: auto !important;
-        }
-        [vw-access-button] {
-            left: 0 !important;
-            right: auto !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
-        }
-        .vw-plugin-wrapper {
-            left: 0 !important;
-            right: auto !important;
-        }
+        div[vw].enabled { left: 20px !important; right: auto !important; }
+        [vw-access-button] { left: 0 !important; right: auto !important; top: 50% !important; transform: translateY(-50%) !important; }
+        .vw-plugin-wrapper { left: 0 !important; right: auto !important; }
     </style>
 </head>
 <body>
@@ -156,10 +180,10 @@
         <main class="main-content">
             <div id="meet-container"></div>
             <aside class="sidebar">
-                <h3>Tradução Simultânea</h3>
+                <h3>Chat Automático</h3>
                 <div id="chat-ia"></div>
-                <button id="btn-voz" onclick="iniciarReconhecimentoVoz()" style="display:none; background: #3498db; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                    🎙️ Falar com o Surdo
+                <button id="btn-voz" onclick="iniciarReconhecimentoVoz()" style="display:none;">
+                    🎙️ Gravar Áudio
                 </button>
             </aside>
         </main>

@@ -28,70 +28,115 @@ function validarLogin() {
         alert('Usuário ou senha incorretos!');
     }
 }
+// Função para gerar um ID aleatório para a sala
+function gerarIdSala(tamanho) {
+    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let resultado = '';
+    for (let i = 0; i < tamanho; i++) {
+        resultado += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+    }
+    return resultado;
+}
+
+// Variável global para armazenar o nome da sala da sessão atual
+let nomeSalaAtual = "";
+
 function entrarNoSistema() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'flex';
-    iniciarJitsi();
     
-    // Adicione esta linha logo após iniciarJitsi:
-    // Ela garante que o Jitsi saiba quem você é para avisar aos outros
-    api.executeCommand('displayName', nomeUsuarioLogado);
-    gerarLinkCompartilhamento(); // <--- Adicione esta linha aqui
+    // Se a sala ainda não foi definida, criamos uma nova (ex: SIDA-AF45G2)
+    if (!nomeSalaAtual) {
+        nomeSalaAtual = "SIDA-" + gerarIdSala(8);
+    }
+    
+    iniciarJitsi(nomeSalaAtual); // Passamos o nome dinâmico para o Jitsi
+    gerarLinkCompartilhamento(); 
 }
 // --- LÓGICA DE RECONHECIMENTO DE VOZ (PONTO B para PONTO A) ---
 // --- LÓGICA DE RECONHECIMENTO DE VOZ ATUALIZADA ---
+let gravandoVoz = false; // Variável global para controlar o estado
+let recognition; // Variável global para a instância
+
 function iniciarReconhecimentoVoz() {
-    console.log("Iniciando reconhecimento de voz...");
-    
     const btnVoz = document.getElementById("btn-voz");
     const chatIA = document.getElementById("chat-ia");
-    
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+
     if (!SpeechRecognition) {
-        alert("Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.");
+        alert("API de voz não suportada.");
         return;
     }
 
-    const recognition = new SpeechRecognition();
+    // Se já estiver gravando, nós paramos manualmente
+    if (gravandoVoz) {
+        recognition.stop();
+        gravandoVoz = false;
+        btnVoz.innerText = "🎙️ Falar com o Surdo";
+        btnVoz.style.backgroundColor = "#3498db";
+        return;
+    }
+
+    // Se não estiver gravando, iniciamos a configuração
+    recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
-    recognition.continuous = false; 
-    recognition.interimResults = false;
+    recognition.continuous = true; // <--- O SEGREDO: Não para sozinho!
+    recognition.interimResults = false; 
 
     recognition.onstart = () => {
-        btnVoz.innerText = "🎙️ Ouvindo... fale agora";
-        btnVoz.style.backgroundColor = "#e67e22";
+        gravandoVoz = true;
+        btnVoz.innerText = "🛑 Parar Gravação"; // Feedback visual de interrupção
+        btnVoz.style.backgroundColor = "#e74c3c"; // Vermelho para indicar "parar"
     };
 
     recognition.onresult = (event) => {
-        // MUDANÇA AQUI: Usamos 'let' para permitir a alteração do texto
-        let textoFalado = event.results[0][0].transcript;
-        
-        // Formata a primeira letra para maiúscula
-        textoFalado = textoFalado.charAt(0).toUpperCase() + textoFalado.slice(1);
-        
-        const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-        // Envia para o Jitsi para o outro usuário receber
-        if (api) {
-            api.executeCommand('sendChatMessage', `[VOZ]: ${textoFalado}`, '', true);
+        let textoFinal = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            textoFinal += event.results[i][0].transcript;
         }
 
-        // Exibe no chat local
-        chatIA.innerHTML += `
-            <div style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 5px; background-color: #f9f9f9; padding: 8px; border-radius: 5px;">
-                <span style="font-size: 0.85em; color: #3498db; display: block; font-weight: bold;">${nomeUsuarioLogado} às ${hora}:</span>
-                <span style="font-size: 1em; color: #2c3e50;">"${textoFalado}"</span>
-            </div>`;
-        chatIA.scrollTop = chatIA.scrollHeight;
+        if (textoFinal.trim() !== "") {
+            // --- TRATATIVA DE PONTUAÇÃO ---
+            let textoComPontuacao = textoFinal.trim();
+
+            // 1. Detectar se a frase começa com palavras de pergunta
+            const palavrasPergunta = ["quem", "qual", "onde", "quando", "por que", "como", "quanto", "será"];
+            const primeiraPalavra = textoComPontuacao.split(" ")[0].toLowerCase();
+
+            if (palavrasPergunta.includes(primeiraPalavra)) {
+                // Se terminar sem sinal, coloca interrogação
+                if (!textoComPontuacao.endsWith("?") && !textoComPontuacao.endsWith("!") && !textoComPontuacao.endsWith(".")) {
+                    textoComPontuacao += "?";
+                }
+            } else {
+                // Se for afirmação e não tiver nada, coloca ponto final
+                if (!textoComPontuacao.endsWith("?") && !textoComPontuacao.endsWith("!") && !textoComPontuacao.endsWith(".")) {
+                    textoComPontuacao += ".";
+                }
+            }
+
+            // 2. Formatar Maiúscula
+            const textoFormatado = textoComPontuacao.charAt(0).toUpperCase() + textoComPontuacao.slice(1);
+            // ------------------------------
+
+            const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (api) {
+                api.executeCommand('sendChatMessage', `[VOZ]: ${textoFormatado}`, '', true);
+            }
+
+            chatIA.innerHTML += `
+                <div style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 5px; background-color: #f9f9f9; padding: 8px; border-radius: 5px;">
+                    <span style="font-size: 0.85em; color: #3498db; display: block; font-weight: bold;">${nomeUsuarioLogado} às ${hora}:</span>
+                    <span style="font-size: 1em; color: #2c3e50;">"${textoFormatado}"</span>
+                </div>`;
+            chatIA.scrollTop = chatIA.scrollHeight;
+        }
     };
 
     recognition.onerror = (event) => {
-        console.error("Erro no reconhecimento:", event.error);
-        btnVoz.innerText = "🎙️ Erro! Tente de novo";
-    };
-
-    recognition.onend = () => {
+        console.error("Erro voz:", event.error);
+        gravandoVoz = false;
         btnVoz.innerText = "🎙️ Falar com o Surdo";
         btnVoz.style.backgroundColor = "#3498db";
     };
@@ -100,10 +145,10 @@ function iniciarReconhecimentoVoz() {
 }
 
 // --- LÓGICA DO JITSI ---
-function iniciarJitsi() {
+function iniciarJitsi(sala) { // <--- Adicionamos o parâmetro 'sala' aqui
     const domain = 'meet.jit.si';
     const options = {
-        roomName: 'SIDA_Meeting_2026',
+        roomName: sala, // <--- Agora ele usa a sala dinâmica gerada!
         width: '100%',
         height: '100%',
         parentNode: document.querySelector('#meet-container'),
@@ -267,10 +312,8 @@ function falar(texto) {
 }
 // 1. Função para atualizar o link na tela (chame isso dentro de entrarNoSistema)
 function gerarLinkCompartilhamento() {
-    // O link para abrir direto no SIDA seria o link da sua página hospedada + o nome da sala
-    // Por enquanto, vamos usar o link direto do Jitsi para facilitar o acesso externo
-    const nomeDaSala = 'SIDA_Meeting_2026';
-    const urlCompleta = `https://meet.jit.si/${nomeDaSala}`;
+    // Usamos a variável global nomeSalaAtual que foi preenchida no entrarNoSistema
+    const urlCompleta = `https://meet.jit.si/${nomeSalaAtual}`;
     
     document.getElementById('link-reuniao').innerText = urlCompleta;
 }
