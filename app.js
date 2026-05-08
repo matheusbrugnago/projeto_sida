@@ -45,8 +45,13 @@ function entrarNoSistema() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'flex';
     
-    // Se a sala ainda não foi definida, criamos uma nova (ex: SIDA-AF45G2)
-    if (!nomeSalaAtual) {
+    // NOVO: Verifica se existe um ID de sala na URL (vinda do convite)
+    const urlParams = new URLSearchParams(window.location.search);
+    const salaPeloLink = urlParams.get('sala');
+
+    if (salaPeloLink) {
+        nomeSalaAtual = salaPeloLink;
+    } else if (!nomeSalaAtual) {
         nomeSalaAtual = "SIDA-" + gerarIdSala(8);
     }
     
@@ -312,8 +317,11 @@ function falar(texto) {
 }
 // 1. Função para atualizar o link na tela (chame isso dentro de entrarNoSistema)
 function gerarLinkCompartilhamento() {
-    // Usamos a variável global nomeSalaAtual que foi preenchida no entrarNoSistema
-    const urlCompleta = `https://meet.jit.si/${nomeSalaAtual}`;
+    // Pega o endereço atual do seu site automaticamente
+    const urlBase = window.location.href.split('?')[0]; 
+    
+    // Cria o link que envia o ID da sala pela URL
+    const urlCompleta = `${urlBase}?sala=${nomeSalaAtual}`;
     
     document.getElementById('link-reuniao').innerText = urlCompleta;
 }
