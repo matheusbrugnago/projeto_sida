@@ -17,13 +17,12 @@
             display: flex;
             height: 100vh;
             width: 100vw;
-        /* Alterado para o azul claro da imagem */
             background-color: #d1e9ff; 
         }
 
         .login-left {
             flex: 1;
-            background: url("./Imagens/SIDA.png"); /* Imagem ilustrativa de acessibilidade/tecnologia */
+            background: url("./Imagens/SIDA.png");
             background-size: cover;
             background-position: center;
         }
@@ -35,14 +34,12 @@
             justify-content: center;
             align-items: center;
             padding: 40px;
-            /* Garante que o lado direito também acompanhe a cor */
             background-color: #d1e9ff; 
         }
 
         .login-box { 
             width: 100%; 
             max-width: 350px; 
-            /* Adicionei um fundo branco leve no card para dar destaque aos campos */
             background: white;
             padding: 30px;
             border-radius: 15px;
@@ -71,21 +68,81 @@
         .login-footer { margin-top: 20px; font-size: 0.85em; color: #7f8c8d; }
         .login-footer a { color: #3498db; text-decoration: none; }
 
-        /* --- TELA DO SISTEMA (ESCONDIDA POR PADRÃO) --- */
+        /* --- TELA DO SISTEMA --- */
         #app-screen { display: none; height: 100vh; flex-direction: column; }
         
-        .header { height: 70px; background: #2c3e50; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; color: white; }
-        .main-content { display: grid; grid-template-columns: 1fr 300px; height: calc(100vh - 70px); background: #000; }
-        #meet-container { width: 100%; height: 100%; }
-        .sidebar { background: #ecf0f1; display: flex; flex-direction: column; padding: 15px; height: 100%; box-sizing: border-box; }
-        
-        #chat-ia { 
-            flex: 1; background: white; border-radius: 5px; padding: 10px; 
-            overflow-y: auto; border: 1px solid #ddd; margin-bottom: 10px;
-            max-height: calc(100vh - 200px);
+        .header { 
+            height: 70px; 
+            background: #2c3e50; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 0 20px; 
+            color: white; 
         }
 
-        #btn-tradutor { background: #e74c3c; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .share-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 15px;
+            border-radius: 8px;
+            border: 1px solid #34495e;
+        }
+
+        /* --- BOTÃO ATIVAR TRADUÇÃO (RECUPERADO) --- */
+        #btn-tradutor { 
+            background: #e74c3c; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        #btn-tradutor:hover { background: #c0392b; }
+
+        .main-content { display: grid; grid-template-columns: 1fr 300px; height: calc(100vh - 70px); background: #000; }
+        #meet-container { width: 100%; height: 100%; }
+        
+        .sidebar { 
+            background: #ecf0f1; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 15px; 
+            height: 100%; 
+            box-sizing: border-box; 
+            overflow: hidden; 
+        }
+
+        #chat-ia { 
+            flex: 1; 
+            background: white; 
+            border-radius: 5px; 
+            padding: 10px; 
+            overflow-y: auto; 
+            border: 1px solid #ddd; 
+            margin-bottom: 15px; 
+        }
+
+        #btn-voz { 
+            width: 100%;
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold;
+            flex-shrink: 0; 
+        }
+        
+        /* Posicionamento VLibras na Esquerda */
+        div[vw].enabled { left: 20px !important; right: auto !important; }
+        [vw-access-button] { left: 0 !important; right: auto !important; top: 50% !important; transform: translateY(-50%) !important; }
+        .vw-plugin-wrapper { left: 0 !important; right: auto !important; }
     </style>
 </head>
 <body>
@@ -99,7 +156,6 @@
                 <input type="text" id="user" placeholder="Usuário">
                 <input type="password" id="pass" placeholder="Senha">
                 <button class="btn-login" onclick="validarLogin()">ENTRAR</button>
-                
                 <div class="login-footer">
                     <a href="#">Esqueceu a senha?</a> | <a href="#">Cadastrar novo usuário</a>
                 </div>
@@ -109,14 +165,26 @@
 
     <div id="app-screen">
         <header class="header">
-            <span>SIDA V.1.0.1</span>
+            <span>SIDA V.1.1.0</span>
+            
+            <div class="share-area">
+                <span id="link-reuniao" style="font-size: 0.85em; color: #bdc3c7;">Gerando link...</span>
+                <button onclick="copiarLink()" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75em;">
+                    📋 Copiar
+                </button>
+            </div>
+
             <button id="btn-tradutor" onclick="initIA()">Ativar Tradução</button>
         </header>
+
         <main class="main-content">
             <div id="meet-container"></div>
             <aside class="sidebar">
-                <h3>Tradução Simultânea</h3>
+                <h3>Chat Automático</h3>
                 <div id="chat-ia"></div>
+                <button id="btn-voz" onclick="iniciarReconhecimentoVoz()" style="display:none;">
+                    🎙️ Gravar Áudio
+                </button>
             </aside>
         </main>
     </div>
@@ -124,5 +192,16 @@
     <div id="webcam-container" style="display:none;"></div>
 
     <script src="app.js"></script>
+
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
+        </div>
+    </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+        new window.VLibras.Widget('https://vlibras.gov.br/app');
+    </script>
 </body>
 </html>
