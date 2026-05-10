@@ -1,10 +1,142 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
 const URL_MODELO = "./model/"; 
 let model, webcam, maxPredictions;
 let nomeUsuarioLogado = "Usuário"; 
 let api; 
 let iaBloqueada = false; 
 const TEMPO_ESPERA = 8000; 
-let nomeSalaAtual = ""; 
+let nomeSalaAtual = "";
+// Variáveis de Controle de Estado
+let modoCadastro = false;
+let tipoUsuarioLogado = ""; // "surdo" ou "ouvinte"
+
+
+// CONEXÃO ao FireBase Connect:
+const firebaseConfig = {
+  apiKey: "AIzaSyCapjvE2bxCI1mORfAj6Yd4n8xziBeTMFI",
+  authDomain: "projeto-sida.firebaseapp.com",
+  projectId: "projeto-sida",
+  storageBucket: "projeto-sida.firebasestorage.app",
+  messagingSenderId: "575853393592",
+  appId: "1:575853393592:web:d457b310cfffd4cf34e64d",
+  measurementId: "G-5S9T1PWLZQ"
+};
+
+// Inicialização
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Alterna entre tela de Login e Cadastro
+window.toggleAuthMode = function() {
+    modoCadastro = !modoCadastro;
+    const camposCadastro = document.getElementById("register-extras");
+    const btnMain = document.getElementById("btn-main");
+    const title = document.getElementById("login-title");
+    const link = document.getElementById("toggle-link");
+
+    if (modoCadastro) {
+        camposCadastro.style.display = "block";
+        btnMain.innerText = "CRIAR CONTA";
+        title.innerText = "Cadastro SIDA";
+        link.innerText = "Já tenho conta";
+    } else {
+        camposCadastro.style.display = "none";
+        btnMain.innerText = "ENTRAR";
+        title.innerText = "Entrar no SIDA";
+        link.innerText = "Cadastre-se";
+    }
+}
+
+// Ação do Botão Principal (Entrar ou Cadastrar)
+window.acaoPrincipal = async function() {
+    const email = document.getElementById("email").value;
+    const senha = document.getElementById("password").value;
+
+    if (!email || !senha) return alert("Preencha todos os campos!");
+
+    if (modoCadastro) {
+        // --- LÓGICA DE CADASTRO ---
+        const tipo = document.getElementById("user-type").value;
+        const nome = document.getElementById("display-name").value;
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+            const user = userCredential.user;
+
+            // Salva o perfil no Firestore (Banco de Dados)
+            await setDoc(doc(db, "usuarios", user.uid), {
+                nome: nome,
+                tipo: tipo,
+                email: email
+            });
+
+            alert("Conta criada com sucesso!");
+            location.reload(); // Recarrega para entrar
+        } catch (error) {
+            alert("Erro ao cadastrar: " + error.message);
+        }
+    } else {
+        // --- LÓGICA DE LOGIN ---
+        try {
+            await signInWithEmailAndPassword(auth, email, senha);
+            // O observer 'onAuthStateChanged' cuidará do restante
+        } catch (error) {
+            alert("Email ou senha incorretos!");
+        }
+    }
+}
+
+// Reset de Senha
+window.resetarSenha = function() {
+    const email = document.getElementById("email").value;
+    if (!email) return alert("Digite seu email primeiro!");
+    
+    sendPasswordResetEmail(auth, email)
+        .then(() => alert("Email de recuperação enviado! Verifique sua caixa de entrada."))
+        .catch((error) => alert("Erro: " + error.message));
+}
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // Busca o tipo do usuário no Firestore
+        const docSnap = await getDoc(doc(db, "usuarios", user.uid));
+        
+        if (docSnap.exists()) {
+            const dados = docSnap.data();
+            tipoUsuarioLogado = dados.tipo;
+            nomeUsuarioLogado = dados.nome || "Usuário";
+
+            // CONFIGURAÇÃO DE TELA POR TIPO
+            const btnIA = document.getElementById("btn-tradutor");
+            const btnVoz = document.getElementById("btn-voz");
+
+            if (tipoUsuarioLogado === "surdo") {
+                btnIA.style.display = "block";
+                btnVoz.style.display = "none";
+            } else {
+                btnIA.style.display = "none";
+                btnVoz.style.display = "block";
+            }
+
+            // Entra no sistema (Sua função que já existia)
+            entrarNoSistema(); 
+        }
+    } else {
+        // Se deslogar, volta para a tela de login
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('app-screen').style.display = 'none';
+        if (api) api.dispose(); // Fecha o Jitsi ao sair
+    }
+});
+
+// Função para Sair
+window.logout = function() {
+    signOut(auth);
+}
 
 // --- 1. GERAÇÃO DE ID ÚNICO ---
 function gerarIdSala(tamanho) {
@@ -16,58 +148,68 @@ function gerarIdSala(tamanho) {
     return resultado;
 }
 
-// --- 2. LÓGICA DE ACESSO ---
-function validarLogin() {
-    const usuarioInput = document.getElementById('user').value;
-    const senha = document.getElementById('pass').value;
-    const btnIA = document.getElementById("btn-tradutor");
-    const btnVoz = document.getElementById("btn-voz");
-
-    if ((usuarioInput === 'Admin' && senha === '123') || (usuarioInput === 'Colega' && senha === '456')) {
-        nomeUsuarioLogado = usuarioInput;
-        
-        // Exibe botões baseado no cargo
-        if (nomeUsuarioLogado === 'Admin') {
-            btnIA.style.display = "block";
-            btnVoz.style.display = "none";
-        } else {
-            btnIA.style.display = "none";
-            btnVoz.style.display = "block";
-        }
-
-        // Verifica se veio por link de convite
-        const urlParams = new URLSearchParams(window.location.search);
-        const salaPeloLink = urlParams.get('sala');
-
-        if (salaPeloLink) {
-            nomeSalaAtual = salaPeloLink;
-        } else {
-            nomeSalaAtual = "SIDA-" + gerarIdSala(8);
-        }
-
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('app-screen').style.display = 'flex';
-        
-        iniciarJitsi(nomeSalaAtual);
-        gerarLinkCompartilhamento();
-    } else {
-        alert('Usuário ou senha incorretos!');
+// --- CORREÇÃO DO LINK DE COMPARTILHAMENTO ---
+window.gerarLinkCompartilhamento = function() {
+    // Pega a URL atual (seja localhost ou github.io)
+    const urlBase = window.location.origin + window.location.pathname;
+    const urlCompleta = `${urlBase}?sala=${nomeSalaAtual}`;
+    
+    const spanLink = document.getElementById('link-reuniao');
+    if (spanLink) {
+        spanLink.innerText = urlCompleta;
     }
 }
 
-// --- 3. LINK DE COMPARTILHAMENTO ---
-function gerarLinkCompartilhamento() {
-    // Pega a URL do seu GitHub Pages automaticamente
-    const urlBase = window.location.origin + window.location.pathname;
-    const urlCompleta = `${urlBase}?sala=${nomeSalaAtual}`;
-    document.getElementById('link-reuniao').innerText = urlCompleta;
+window.copiarLink = function() {
+    const linkTexto = document.getElementById('link-reuniao').innerText;
+    
+    // Tenta usar a API moderna, se falhar usa o método antigo
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(linkTexto).then(() => {
+            alert("Link copiado com sucesso!");
+        });
+    } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = linkTexto;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        alert("Link copiado!");
+    }
 }
 
-function copiarLink() {
-    const linkTexto = document.getElementById('link-reuniao').innerText;
-    navigator.clipboard.writeText(linkTexto).then(() => {
-        alert("Link copiado! Envie para que outros entrem no seu SIDA.");
-    });
+// --- FUNÇÃO PARA SAIR (LOGOUT) ---
+window.fazerLogout = function() {
+    if (confirm("Deseja realmente sair da conta?")) {
+        signOut(auth).then(() => {
+            // O onAuthStateChanged vai detectar a saída e recarregar a tela de login
+            alert("Você saiu do sistema.");
+            // Limpa a URL (remove o ?sala=ID) para não entrar na mesma sala direto
+            window.location.href = window.location.origin + window.location.pathname;
+        }).catch((error) => {
+            alert("Erro ao sair: " + error.message);
+        });
+    }
+}
+
+function entrarNoSistema() {
+    // Verifica se veio por link de convite
+    const urlParams = new URLSearchParams(window.location.search);
+    const salaPeloLink = urlParams.get('sala');
+
+    if (salaPeloLink) {
+        nomeSalaAtual = salaPeloLink;
+    } else {
+        nomeSalaAtual = "SIDA-" + gerarIdSala(8);
+    }
+
+    // Esconde login e mostra app
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'flex';
+    
+    iniciarJitsi(nomeSalaAtual);
+    gerarLinkCompartilhamento();
 }
 
 // --- 4. LÓGICA DO JITSI ---

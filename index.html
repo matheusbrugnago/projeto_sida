@@ -71,14 +71,18 @@
         /* --- TELA DO SISTEMA --- */
         #app-screen { display: none; height: 100vh; flex-direction: column; }
         
-        .header { 
-            height: 70px; 
-            background: #2c3e50; 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            padding: 0 20px; 
-            color: white; 
+        .header {
+            display: flex;
+            justify-content: space-between; /* Espalha os 3 elementos (Título, Link, Botões) */
+            align-items: center;
+            padding: 0 20px;
+            background: #2c3e50;
+            height: 70px;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 10px; /* Cria o espaço de 10px entre o Ativar Tradução e o Sair */
+            align-items: center;
         }
 
         .share-area {
@@ -92,15 +96,24 @@
         }
 
         /* --- BOTÃO ATIVAR TRADUÇÃO (RECUPERADO) --- */
-        #btn-tradutor { 
-            background: #e74c3c; 
-            color: white; 
-            border: none; 
-            padding: 10px 20px; 
-            border-radius: 5px; 
-            cursor: pointer; 
+        #btn-tradutor {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
             font-weight: bold;
-            transition: background 0.3s;
+            white-space: nowrap; /* Impede que o texto quebre em duas linhas */
+        }
+        #btn-sair {
+            background: #c0392b; /* Um tom de vermelho levemente diferente para o Sair */
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
         }
         #btn-tradutor:hover { background: #c0392b; }
 
@@ -148,24 +161,38 @@
 <body>
 
     <div id="login-screen">
-        <div class="login-left"></div>
-        <div class="login-right">
-            <div class="login-box">
-                <h2>SIDA, Acesso à Chamada Integrada</h2>
-                <p>Entre com suas credenciais para acessar a sala.</p>
-                <input type="text" id="user" placeholder="Usuário">
-                <input type="password" id="pass" placeholder="Senha">
-                <button class="btn-login" onclick="validarLogin()">ENTRAR</button>
-                <div class="login-footer">
-                    <a href="#">Esqueceu a senha?</a> | <a href="#">Cadastrar novo usuário</a>
-                </div>
+    <div class="login-left"></div>
+    <div class="login-right">
+        <div class="login-box">
+            <h2 id="login-title">Entrar no SIDA</h2>
+            <p id="login-subtitle">Entre com suas credenciais para acessar a sala.</p>
+            
+            <input type="email" id="email" placeholder="E-mail">
+            <input type="password" id="password" placeholder="Senha">
+
+            <div id="register-extras" style="display: none;">
+                <input type="text" id="display-name" placeholder="Nome Completo">
+                <select id="user-type" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd;">
+                    <option value="surdo">Eu sou Surdo (Usar IA de Sinais)</option>
+                    <option value="ouvinte">Eu sou Ouvinte (Usar Voz)</option>
+                </select>
+            </div>
+
+            <button class="btn-login" id="btn-main" onclick="acaoPrincipal()">ENTRAR</button>
+            
+            <div class="login-footer">
+                <span id="footer-text">Não tem conta?</span> 
+                <a href="javascript:void(0)" id="toggle-link" onclick="toggleAuthMode()">Cadastre-se</a>
+                <br><br>
+                <a href="javascript:void(0)" onclick="resetarSenha()">Esqueceu a senha?</a>
             </div>
         </div>
     </div>
+</div>
 
     <div id="app-screen">
         <header class="header">
-            <span>SIDA V.1.1.0</span>
+            <span>SIDA ALPHA 26.05.10</span>
             
             <div class="share-area">
                 <span id="link-reuniao" style="font-size: 0.85em; color: #bdc3c7;">Gerando link...</span>
@@ -173,8 +200,10 @@
                     📋 Copiar
                 </button>
             </div>
-
-            <button id="btn-tradutor" onclick="initIA()">Ativar Tradução</button>
+            <div class="header-buttons">
+                <button id="btn-tradutor" onclick="initIA()">Ativar Tradução</button>
+                <button id="btn-sair" onclick="fazerLogout()">Sair</button>
+            </div>   
         </header>
 
         <main class="main-content">
@@ -191,7 +220,7 @@
 
     <div id="webcam-container" style="display:none;"></div>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 
     <div vw class="enabled">
         <div vw-access-button class="active"></div>
