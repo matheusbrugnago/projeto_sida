@@ -13,3 +13,9 @@ Mundo -> Surdo ( Funcionalidade de Falar para o Surdo e encaminhar português es
 1-Faça download dos arquivos para repositório local
 2-Clique com botão direito em cima do index.html e rode o Live Server no Chrome
 3-Já irá abrir na Aplicação
+
+Requisitos Observados:
+-> 100 % das Funcionalidades trabalhando no Google Chrome
+-> Testando no Opera GX e há muitos bloqueios de permissionamento no site
+
+
