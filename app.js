@@ -261,12 +261,16 @@ function iniciarJitsi(sala) {
 let gravandoVoz = false;
 let recognition;
 
-function iniciarReconhecimentoVoz() {
+// Função de Reconhecimento de Voz corrigida para Módulos
+window.iniciarReconhecimentoVoz = function() {
     const btnVoz = document.getElementById("btn-voz");
     const chatIA = document.getElementById("chat-ia");
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+        alert("Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.");
+        return;
+    }
 
     if (gravandoVoz) {
         recognition.stop();
@@ -294,19 +298,36 @@ function iniciarReconhecimentoVoz() {
 
         if (textoFinal.trim() !== "") {
             let textoComPontuacao = textoFinal.trim();
-            if (!textoComPontuacao.endsWith("?") && !textoComPontuacao.endsWith(".")) textoComPontuacao += ".";
+            // Adiciona pontuação básica se não houver
+            if (!textoComPontuacao.endsWith("?") && !textoComPontuacao.endsWith(".")) {
+                textoComPontuacao += ".";
+            }
+            
+            // Primeira letra em maiúscula
             const textoFormatado = textoComPontuacao.charAt(0).toUpperCase() + textoComPontuacao.slice(1);
 
-            if (api) api.executeCommand('sendChatMessage', `[VOZ]: ${textoFormatado}`, '', true);
+            // Envia para o Jitsi (para os outros verem)
+            if (api) {
+                api.executeCommand('sendChatMessage', `[VOZ]: ${textoFormatado}`, '', true);
+            }
 
+            // Mostra no seu próprio chat local
             const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             chatIA.innerHTML += `
                 <div style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 5px; background-color: #f9f9f9; padding: 8px; border-radius: 5px;">
                     <span style="font-size: 0.85em; color: #3498db; display: block; font-weight: bold;">${nomeUsuarioLogado} às ${hora}:</span>
                     <span style="font-size: 1em; color: #2c3e50;">"${textoFormatado}"</span>
                 </div>`;
+            
             chatIA.scrollTop = chatIA.scrollHeight;
         }
+    };
+
+    recognition.onerror = (event) => {
+        console.error("Erro no reconhecimento: ", event.error);
+        gravandoVoz = false;
+        btnVoz.innerText = "🎙️ Falar com o Surdo";
+        btnVoz.style.backgroundColor = "#3498db";
     };
 
     recognition.start();
