@@ -313,7 +313,8 @@ function iniciarReconhecimentoVoz() {
 }
 
 // --- 6. LÓGICA DA IA (LIBRAS) ---
-async function initIA() {
+// Adicione o window. antes de async
+window.initIA = async function() {
     const btn = document.getElementById("btn-tradutor");
     btn.innerText = "Carregando...";
     try {
