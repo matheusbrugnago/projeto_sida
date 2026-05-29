@@ -61,11 +61,24 @@ window.toggleAuthMode = function() {
 }
 
 // Ação do Botão Principal (Entrar ou Cadastrar)
-window.acaoPrincipal = async function() {
-    const email = document.getElementById("email").value;
+window.acaoPrincipal = async function(e) {
+    // 1. Evita o recarregamento acidental da página caso seja um formulário
+    if (e && e.preventDefault) {
+        e.preventDefault();
+    }
+
+    // 2. Captura os valores e usa o .trim() para limpar espaços invisíveis
+    const email = document.getElementById("email").value.trim();
     const senha = document.getElementById("password").value;
 
     if (!email || !senha) return alert("Preencha todos os campos!");
+
+    // INTERCEPTAÇÃO DO SUPER ADMIN (Corrigida e isolada)
+    if (email === "admin" && senha === "1234") {
+        alert("Acesso Administrativo Iniciado!");
+        window.location.href = "admin.html"; 
+        return; // IMPORTANTE: interrompe a execução para não ir pro Firebase
+    }
 
     if (modoCadastro) {
         // --- LÓGICA DE CADASTRO ---
@@ -84,16 +97,48 @@ window.acaoPrincipal = async function() {
             });
 
             alert("Conta criada com sucesso!");
-            location.reload(); // Recarrega para entrar
+            location.reload(); 
         } catch (error) {
             alert("Erro ao cadastrar: " + error.message);
         }
     } else {
-        // --- LÓGICA DE LOGIN ---
+        // --- LÓGICA DE LOGIN COM VALIDAÇÃO DE STATUS DA EMPRESA ---
         try {
-            await signInWithEmailAndPassword(auth, email, senha);
-            // O observer 'onAuthStateChanged' cuidará do restante
+            // A) Tenta autenticar o usuário com e-mail e senha no Auth
+            const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+            const user = userCredential.user;
+
+            // B) Busca o documento do usuário no Firestore para descobrir a empresa dele
+            const userDocRef = doc(db, "usuarios", user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+
+            if (userDocSnap.exists()) {
+                const dadosUsuario = userDocSnap.data();
+                const empresaId = dadosUsuario.empresaId; // Pega a string (ex: "Sisplan" ou "empresaA")
+
+                if (empresaId) {
+                    // C) Busca o documento correspondente na coleção "empresas"
+                    const empresaDocRef = doc(db, "empresas", empresaId);
+                    const empresaDocSnap = await getDoc(empresaDocRef);
+
+                    if (empresaDocSnap.exists()) {
+                        const dadosEmpresa = empresaDocSnap.data();
+
+                        // D) Se a empresa estiver bloqueada, derruba a sessão na hora
+                        if (dadosEmpresa.status === "bloqueado") {
+                            await auth.signOut(); // Desloga imediatamente do Firebase Auth
+                            alert("Acesso Negado: A empresa vinculada a este usuário encontra-se desativada. Contate o administrador.");
+                            return; // IMPORTANTE: Mata a execução aqui e não deixa o observer seguir
+                        }
+                    }
+                }
+            }
+
+            // Se o documento não existir, ou a empresa não estiver bloqueada, o código flui.
+            // O seu observer 'onAuthStateChanged' cuidará do redirecionamento para a tela do app.
+            
         } catch (error) {
+            console.error("Erro Firebase Auth:", error);
             alert("Email ou senha incorretos!");
         }
     }
