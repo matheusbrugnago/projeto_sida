@@ -6,6 +6,8 @@
     <title>SIDA with Jitsu</title>
     
     <script src='https://meet.jit.si/external_api.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -182,8 +184,6 @@
             <button class="btn-login" id="btn-main" onclick="acaoPrincipal()">ENTRAR</button>
             
             <div class="login-footer">
-                <span id="footer-text">Não tem conta?</span> 
-                <a href="javascript:void(0)" id="toggle-link" onclick="toggleAuthMode()">Cadastre-se</a>
                 <br><br>
                 <a href="javascript:void(0)" onclick="resetarSenha()">Esqueceu a senha?</a>
             </div>
@@ -194,7 +194,7 @@
     <div id="app-screen">
             <header class="header">
     <div class="header-info" style="display: flex; flex-direction: column; gap: 2px;">
-        <span style="font-size: 0.85em; color: #bdc3c7; font-weight: bold;">SIDA V.1.1.0</span>
+        <span style="font-size: 0.85em; color: #bdc3c7; font-weight: bold;">SIDA BETA 1</span>
         <div style="display: flex; align-items: center; gap: 8px;">
             <span id="header-user-name" style="font-size: 1em; color: #ffffff; font-weight: 500;">Carregando...</span>
             <i class="fas fa-cog" onclick="abrirConfiguracoes()" style="color: #bdc3c7; cursor: pointer; font-size: 0.9em;" title="Configurações do Perfil"></i>

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>SIDA - Painel Administrativo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #eef2f7; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        .main-wrapper {
+            max-width: 1100px;
+            margin: auto;
+        }
+        
+        /* DASHBOARD METRICAS */
+        .dashboard-overview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        .metric-card {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .metric-info h3 {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .metric-info .metric-number {
+            margin: 5px 0 0 0;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .metric-icon {
+            font-size: 2.5rem;
+            padding: 15px;
+            border-radius: 12px;
+        }
+        .metric-card.companies .metric-icon { color: #3b82f6; background: #eff6ff; }
+        .metric-card.users .metric-icon { color: #10b981; background: #ecfdf5; }
+
+        /* SEÇÕES PRINCIPAIS */
+        .container { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 25px; 
+            margin-bottom: 25px;
+        }
+        .card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
+        }
+        .card.full-width {
+            grid-column: span 2;
+        }
+        h2 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #f1f3f5; 
+            padding-bottom: 12px; 
+            margin-top: 0; 
+            font-size: 1.5rem;
+        }
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 10px 0; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-size: 0.95rem;
+            background-color: #fff;
+        }
+        input:focus, select:focus { outline: none; border-color: #27ae60; }
+        
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 1rem;
+            transition: 0.2s ease; 
+            margin-top: 10px; 
+        }
+        .btn-save { background: #27ae60; color: white; }
+        .btn-save:hover { background: #219150; }
+        
+        .btn-back { 
+            background: #7f8c8d; color: white; width: auto; padding: 10px 20px;
+            border-radius: 6px; margin-bottom: 25px; font-size: 0.9rem; border: none; cursor: pointer;
+        }
+        .btn-back:hover { background: #6c7a7b; }
+
+        /* AÇÕES TABELAS */
+        .actions-cell { display: flex; gap: 8px; align-items: center; }
+        .btn-action {
+            padding: 6px 12px; font-size: 0.85rem; border-radius: 4px;
+            cursor: pointer; font-weight: 600; border: none; width: auto; margin: 0;
+        }
+        .btn-toggle-deactivate { background-color: #e67e22; color: white; }
+        .btn-toggle-deactivate:hover { background-color: #d35400; }
+        .btn-toggle-activate { background-color: #27ae60; color: white; }
+        .btn-toggle-activate:hover { background-color: #219150; }
+        .btn-delete { background-color: #e74c3c; color: white; padding: 6px 10px; }
+        .btn-delete:hover { background-color: #c0392b; }
+        .btn-edit { background-color: #2980b9; color: white; padding: 6px 10px; }
+        .btn-edit:hover { background-color: #2471a3; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 14px; border-bottom: 1px solid #edf2f7; font-size: 0.95rem; }
+        th { background: #f8fafc; color: #475569; font-weight: 600; }
+        
+        /* FILTRO REPOSITOR */
+        .filter-area {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .filter-area select {
+            max-width: 350px;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper">
+        <button class="btn-back" onclick="window.location.href='index.html'">← Voltar ao Login</button>
+
+        <div class="dashboard-overview">
+            <div class="metric-card companies">
+                <div class="metric-info">
+                    <h3>Empresas Parceiras</h3>
+                    <div class="metric-number" id="total-empresas">...</div>
+                </div>
+                <div class="metric-icon"><i class="fas fa-building"></i></div>
+            </div>
+
+            <div class="metric-card users">
+                <div class="metric-info">
+                    <h3>Usuários Ativos</h3>
+                    <div class="metric-number" id="total-usuarios">...</div>
+                </div>
+                <div class="metric-icon"><i class="fas fa-users"></i></div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="card">
+                <h2><i class="fas fa-building"></i> Cadastrar Empresa</h2>
+                <input type="text" id="empresa-nome" placeholder="Ex: Empresa A">
+                <select id="empresa-status">
+                    <option value="ativo">Status: Ativo</option>
+                    <option value="bloqueado">Status: Bloqueado</option>
+                </select>
+                <button class="btn-save" onclick="salvarEmpresa()">Gravar Empresa</button>
+                
+                <table id="tabela-empresas">
+                    <thead>
+                        <tr>
+                            <th>ID / Nome</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2 id="titulo-usuario-card"><i class="fas fa-user-plus"></i> Cadastrar Usuário</h2>
+                <input type="hidden" id="edit-user-uid" value="">
+                
+                <input type="text" id="user-nome" placeholder="Nome Completo">
+                <input type="email" id="user-email" placeholder="E-mail de Acesso">
+                <div id="container-senha-usuario">
+                    <input type="password" id="user-senha" placeholder="Senha Temporária">
+                </div>
+                
+                <select id="user-tipo">
+                    <option value="surdo">Tipo: Surdo</option>
+                    <option value="ouvinte">Tipo: Ouvinte</option>
+                </select>
+                <select id="select-empresa">
+                    <option value="">Selecione a Empresa...</option>
+                </select>
+                <button class="btn-save" id="btn-salvar-usuario" onclick="cadastrarOuAtualizarUsuario()">Criar Acesso</button>
+                <button style="display:none; background:#95a5a6; color:white;" id="btn-cancelar-edicao" onclick="cancelarEdicaoUsuario()">Cancelar Edição</button>
+            </div>
+
+            <div class="card full-width">
+                <h2><i class="fas fa-users-gear"></i> Consultar Usuários Cadastrados</h2>
+                
+                <div class="filter-area">
+                    <label style="font-weight: 600; color: #475569;">Filtrar por Empresa:</label>
+                    <select id="filter-empresa-select" onchange="filtrarUsuariosPorEmpresa()">
+                        <option value="todos">Mostrar Todos os Usuários</option>
+                    </select>
+                </div>
+
+                <table id="tabela-usuarios">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>Tipo</th>
+                            <th>Empresa Vinculada</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+        // CONFIGURAÇÃO DO SEU FIREBASE (Mantenha as suas chaves aqui)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCapjvE2bxCI1mORfAj6Yd4n8xziBeTMFI",
+            authDomain: "projeto-sida.firebaseapp.com",
+            projectId: "projeto-sida",
+            storageBucket: "projeto-sida.firebasestorage.app",
+            messagingSenderId: "575853393592",
+            appId: "1:575853393592:web:d457b310cfffd4cf34e64d",
+            measurementId: "G-5S9T1PWLZQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Cache local em memória para agilizar os filtros na tela sem sobrecarregar requisições
+        let listaGlobalUsuarios = []; 
+
+        // --- 1. SALVAR EMPRESA ---
+        window.salvarEmpresa = async function() {
+            const nome = document.getElementById("empresa-nome").value.trim();
+            const status = document.getElementById("empresa-status").value;
+            if(!nome) return alert("Por favor, digite o nome da empresa!");
+            const idDocumento = nome.replace(/\s/g, ''); 
+
+            try {
+                await setDoc(doc(db, "empresas", idDocumento), { nome, status });
+                alert(`Empresa "${nome}" gravada com sucesso!`);
+                location.reload();
+            } catch (error) {
+                alert("Erro ao salvar empresa: " + error.message);
+            }
+        }
+
+        window.alternarStatusEmpresa = async function(idEmpresa, statusAtual, nomeEmpresa) {
+            const novoStatus = statusAtual === "ativo" ? "bloqueado" : "ativo";
+            if (!confirm(`Deseja alterar o status da empresa ${nomeEmpresa} para ${novoStatus}?`)) return;
+            try {
+                await setDoc(doc(db, "empresas", idEmpresa), { nome: nomeEmpresa, status: novoStatus });
+                location.reload();
+            } catch (error) { alert(error.message); }
+        }
+
+        window.excluirEmpresa = async function(idEmpresa, nomeEmpresa) {
+            if (!confirm(`Excluir permanentemente a empresa "${nomeEmpresa}"?`)) return;
+            try {
+                await deleteDoc(doc(db, "empresas", idEmpresa));
+                location.reload();
+            } catch (error) { alert(error.message); }
+        }
+
+        // --- 2. LOGICA COMBINADA: CADASTRAR OU ATUALIZAR USUÁRIO ---
+        window.cadastrarOuAtualizarUsuario = async function() {
+            const uidExistente = document.getElementById("edit-user-uid").value;
+            const nome = document.getElementById("user-nome").value.trim();
+            const email = document.getElementById("user-email").value.trim();
+            const tipo = document.getElementById("user-tipo").value;
+            const empresaId = document.getElementById("select-empresa").value;
+
+            if(!nome || !email || !empresaId) return alert("Preencha os campos obrigatórios!");
+
+            // CENÁRIO A: ATUALIZAÇÃO (EDIÇÃO)
+            if(uidExistente) {
+                try {
+                    await updateDoc(doc(db, "usuarios", uidExistente), {
+                        nome: nome,
+                        email: email,
+                        tipo: tipo,
+                        empresaId: empresaId
+                    });
+                    alert("Dados do usuário atualizados com sucesso!");
+                    location.reload();
+                } catch(error) {
+                    alert("Erro ao atualizar: " + error.message);
+                }
+                return;
+            }
+
+            // CENÁRIO B: CRIAÇÃO DE NOVO ACESSO
+            const senha = document.getElementById("user-senha").value;
+            if(!senha) return alert("Digite a senha temporária para o novo usuário!");
+
+            try {
+                const secondaryApp = initializeApp(firebaseConfig, "SecondaryInstance");
+                const secondaryAuth = getAuth(secondaryApp);
+                
+                const userCred = await createUserWithEmailAndPassword(secondaryAuth, email, senha);
+                const uid = userCred.user.uid;
+
+                await setDoc(doc(db, "usuarios", uid), { email, empresaId, nome, tipo });
+                await signOut(secondaryAuth);
+                
+                alert(`Usuário "${nome}" criado com sucesso!`);
+                location.reload();
+            } catch (error) {
+                alert("Erro no cadastro: " + error.message);
+            }
+        }
+
+        // --- 3. FUNÇÕES DE SUPORTE DO GRID DE USUÁRIOS ---
+        window.prepararEdicaoUsuario = function(uid, nome, email, tipo, empresaId) {
+            document.getElementById("titulo-usuario-card").innerHTML = `<i class="fas fa-user-pen"></i> Editar Cadastro`;
+            document.getElementById("edit-user-uid").value = uid;
+            document.getElementById("user-nome").value = nome;
+            document.getElementById("user-email").value = email;
+            document.getElementById("user-tipo").value = tipo;
+            document.getElementById("select-empresa").value = empresaId;
+            
+            // Oculta campo de senha na edição
+            document.getElementById("container-senha-usuario").style.display = "none";
+            document.getElementById("btn-salvar-usuario").innerText = "Atualizar Cadastro";
+            document.getElementById("btn-cancelar-edicao").style.display = "block";
+            
+            window.scrollTo({ top: 200, behavior: 'smooth' });
+        }
+
+        window.cancelarEdicaoUsuario = function() {
+            document.getElementById("titulo-usuario-card").innerHTML = `<i class="fas fa-user-plus"></i> Cadastrar Usuário`;
+            document.getElementById("edit-user-uid").value = "";
+            document.getElementById("user-nome").value = "";
+            document.getElementById("user-email").value = "";
+            document.getElementById("container-senha-usuario").style.display = "block";
+            document.getElementById("user-senha").value = "";
+            document.getElementById("btn-salvar-usuario").innerText = "Criar Acesso";
+            document.getElementById("btn-cancelar-edicao").style.display = "none";
+        }
+
+        window.excluirUsuarioFirestore = async function(uid, nome) {
+            if(!confirm(`Remover permanentemente o acesso do usuário "${nome}" do Firestore?`)) return;
+            try {
+                await deleteDoc(doc(db, "usuarios", uid));
+                alert("Usuário removido com sucesso!");
+                location.reload();
+            } catch(error) {
+                alert("Erro ao excluir documento: " + error.message);
+            }
+        }
+
+        // --- 4. MOTOR DE RENDERIZAÇÃO E FILTRO ---
+        window.filtrarUsuariosPorEmpresa = function() {
+            const filtro = document.getElementById("filter-empresa-select").value;
+            const tabelaBody = document.querySelector("#tabela-usuarios tbody");
+            tabelaBody.innerHTML = "";
+
+            const usuariosFiltrados = filtro === "todos" 
+                ? listaGlobalUsuarios 
+                : listaGlobalUsuarios.filter(u => u.empresaId === filtro);
+
+            if(usuariosFiltrados.length === 0) {
+                tabelaBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Nenhum usuário cadastrado nesta empresa.</td></tr>`;
+                return;
+            }
+
+            usuariosFiltrados.forEach(user => {
+                const row = `<tr>
+                    <td><strong>${user.nome}</strong></td>
+                    <td>${user.email}</td>
+                    <td><span class="badge">${user.tipo.toUpperCase()}</span></td>
+                    <td><i class="fas fa-building" style="color:#94a3b8; margin-right:5px;"></i> ${user.empresaId}</td>
+                    <td>
+                        <div class="actions-cell">
+                            <button class="btn-action btn-edit" onclick="prepararEdicaoUsuario('${user.id}', '${user.nome}', '${user.email}', '${user.tipo}', '${user.empresaId}')" title="Editar Usuário">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="btn-action btn-delete" onclick="excluirUsuarioFirestore('${user.id}', '${user.nome}')" title="Excluir Usuário">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+                tabelaBody.innerHTML += row;
+            });
+        }
+
+        // --- 5. CARREGADOR INICIAL ---
+        async function carregarDadosIniciais() {
+            try {
+                // Empresas
+                const queryEmpresas = await getDocs(collection(db, "empresas"));
+                document.getElementById("total-empresas").innerText = queryEmpresas.size;
+
+                const selectEmpresa = document.getElementById("select-empresa");
+                const filterSelect = document.getElementById("filter-empresa-select");
+                const tabelaEmpresasBody = document.querySelector("#tabela-empresas tbody");
+
+                queryEmpresas.forEach((docSnap) => {
+                    const dados = docSnap.data();
+                    const idEmpresa = docSnap.id;
+                    const nomeExibicao = dados.nome ? dados.nome : idEmpresa;
+
+                    // Select do Cadastro
+                    const opt1 = document.createElement("option");
+                    opt1.value = idEmpresa; opt1.innerText = nomeExibicao;
+                    selectEmpresa.appendChild(opt1);
+
+                    // Select do Filtro de Consulta
+                    const opt2 = document.createElement("option");
+                    opt2.value = idEmpresa; opt2.innerText = nomeExibicao;
+                    filterSelect.appendChild(opt2);
+
+                    const textoBotaoStatus = dados.status === 'ativo' ? 'Desativar' : 'Ativar';
+                    const classeBotaoStatus = dados.status === 'ativo' ? 'btn-toggle-deactivate' : 'btn-toggle-activate';
+
+                    const row = `<tr>
+                        <td><strong>${idEmpresa}</strong> (${nomeExibicao})</td>
+                        <td><span style="color: ${dados.status === 'ativo' ? '#27ae60' : '#c0392b'}; font-weight: bold;">${dados.status.toUpperCase()}</span></td>
+                        <td>
+                            <div class="actions-cell">
+                                <button class="btn-action ${classeBotaoStatus}" onclick="alternarStatusEmpresa('${idEmpresa}', '${dados.status}', '${nomeExibicao}')">
+                                    ${textoBotaoStatus}
+                                </button>
+                                <button class="btn-action btn-delete" onclick="excluirEmpresa('${idEmpresa}', '${nomeExibicao}')">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>`;
+                    tabelaEmpresasBody.innerHTML += row;
+                });
+
+                // Usuários
+                const queryUsuarios = await getDocs(collection(db, "usuarios"));
+                document.getElementById("total-usuarios").innerText = queryUsuarios.size;
+
+                queryUsuarios.forEach(docSnap => {
+                    listaGlobalUsuarios.push({
+                        id: docSnap.id,
+                        ...docSnap.data()
+                    });
+                });
+
+                // Renderiza o grid de usuários inicialmente mostrando todos
+                filtrarUsuariosPorEmpresa();
+
+            } catch (error) {
+                console.error("Erro na carga inicial:", error);
+            }
+        }
+
+        carregarDadosIniciais();
+    </script>
+</body>
+</html>
